@@ -221,10 +221,12 @@
   });
 
   // ------- Camera -------
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const camera = new Camera(webcamEl, {
     onFrame: async () => { await hands.send({ image: webcamEl }); },
-    width: 400,
-    height: 300,
+    width: isMobile ? 300 : 400,
+    height: isMobile ? 400 : 300,
+    facingMode: 'user',
   });
 
   camera.start().then(() => {
