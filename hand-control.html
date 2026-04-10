@@ -276,6 +276,7 @@
   mainVideo.addEventListener('canplaythrough', () => { videoReady = true; });
 
   let isSeeking = false;
+  let lastSeekTime = 0;
   mainVideo.addEventListener('seeking', () => { isSeeking = true; });
   mainVideo.addEventListener('seeked',  () => { isSeeking = false; });
 
@@ -284,8 +285,11 @@
     if (videoReady && dur && !isNaN(dur)) {
       if (hasHand) {
         smoothSeek = lerp(smoothSeek, targetSeek, 0.12);
-        if (!isSeeking) {
-          mainVideo.currentTime = Math.min(smoothSeek * dur, dur - 0.001);
+        const newTime = Math.min(smoothSeek * dur, dur - 0.001);
+        // 변화가 충분할 때만 seek (모바일 부하 감소)
+        if (!isSeeking && Math.abs(newTime - lastSeekTime) > 0.02) {
+          mainVideo.currentTime = newTime;
+          lastSeekTime = newTime;
         }
       }
       progressBar.style.width = (mainVideo.currentTime / dur * 100) + '%';
