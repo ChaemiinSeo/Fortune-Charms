@@ -199,9 +199,10 @@
     locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
   });
 
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   hands.setOptions({
     maxNumHands: 1,
-    modelComplexity: 1,
+    modelComplexity: isMobile ? 0 : 1,
     minDetectionConfidence: 0.6,
     minTrackingConfidence: 0.5,
   });
@@ -287,7 +288,7 @@
         smoothSeek = lerp(smoothSeek, targetSeek, 0.12);
         const newTime = Math.min(smoothSeek * dur, dur - 0.001);
         // 변화가 충분할 때만 seek (모바일 부하 감소)
-        if (!isSeeking && Math.abs(newTime - lastSeekTime) > 0.02) {
+        if (!isSeeking && Math.abs(newTime - lastSeekTime) > 0.04) {
           mainVideo.currentTime = newTime;
           lastSeekTime = newTime;
         }
