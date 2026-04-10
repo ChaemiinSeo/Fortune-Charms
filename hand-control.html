@@ -8,113 +8,62 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #fff; width: 100vw; height: 100vh; overflow: hidden; }
 
-  #video-container {
-    position: fixed;
-    inset: 0;
-  }
-
+  /* ── Main Video ── */
+  #video-container { position: fixed; inset: 0; }
   #mainVideo {
-    width: 90%;
-    height: auto;
-    display: block;
-    position: absolute;
-    top: 50%;
-    left: 50%;
+    width: 90%; height: auto;
+    display: block; position: absolute;
+    top: 50%; left: 50%;
     transform: translate(-50%, -50%);
   }
 
+  /* ── PIP Webcam ── */
+  #pip-container {
+    position: fixed; right: 16px; bottom: 16px;
+    width: 240px; height: 180px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 8px; overflow: hidden;
+    background: #111; z-index: 10;
+  }
+  #webcam, #landmarkCanvas {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    transform: scaleX(-1);
+  }
+  #webcam { object-fit: cover; }
+  #landmarkCanvas { pointer-events: none; }
+
+  /* ── HUD ── */
+  #hud {
+    position: fixed; top: 16px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column;
+    align-items: center; gap: 8px;
+    z-index: 20; pointer-events: none;
+  }
+  #status-label {
+    color: rgba(255,255,255,0.8);
+    font: 13px monospace;
+    background: rgba(0,0,0,0.5);
+    padding: 4px 12px; border-radius: 12px;
+  }
+  .bar-container {
+    width: 260px; border-radius: 3px;
+    overflow: hidden; background: rgba(255,255,255,0.2);
+  }
+  #progress-bar-container { height: 6px; }
+  #openness-bar-container { height: 4px; background: rgba(255,255,255,0.15); }
+  .bar-fill { height: 100%; width: 0%; border-radius: 3px; }
+  #progress-bar { background: #fff; transition: width 0.05s linear; }
+  #openness-bar { background: #4af; }
+
+  /* ── Mobile ── */
   @media (max-width: 768px) {
     #mainVideo {
       width: 160%;
       transform: translate(-50%, calc(-50% - 45px));
     }
-    #pip-container {
-      width: 112px;
-      height: 84px;
-    }
-  }
-
-  #pip-container {
-    position: fixed;
-    right: 16px;
-    bottom: 16px;
-    width: 240px;
-    height: 180px;
-    border: 2px solid rgba(255,255,255,0.4);
-    border-radius: 8px;
-    overflow: hidden;
-    background: #111;
-    z-index: 10;
-  }
-
-  #webcam {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transform: scaleX(-1);
-  }
-
-  #landmarkCanvas {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    transform: scaleX(-1);
-    pointer-events: none;
-  }
-
-  #hud {
-    position: fixed;
-    top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    z-index: 20;
-    pointer-events: none;
-  }
-
-  #status-label {
-    color: rgba(255,255,255,0.8);
-    font-family: monospace;
-    font-size: 13px;
-    background: rgba(0,0,0,0.5);
-    padding: 4px 12px;
-    border-radius: 12px;
-  }
-
-  #progress-bar-container {
-    width: 260px;
-    height: 6px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-
-  #progress-bar {
-    height: 100%;
-    width: 0%;
-    background: #fff;
-    border-radius: 3px;
-    transition: width 0.05s linear;
-  }
-
-  #openness-bar-container {
-    width: 260px;
-    height: 4px;
-    background: rgba(255,255,255,0.15);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  #openness-bar {
-    height: 100%;
-    width: 0%;
-    background: #4af;
-    border-radius: 2px;
+    #pip-container { width: 112px; height: 84px; }
   }
 </style>
 </head>
@@ -131,75 +80,86 @@
 
 <div id="hud">
   <div id="status-label">웹캠 초기화 중...</div>
-  <div id="progress-bar-container">
-    <div id="progress-bar"></div>
+  <div id="progress-bar-container" class="bar-container">
+    <div id="progress-bar" class="bar-fill"></div>
   </div>
-  <div id="openness-bar-container">
-    <div id="openness-bar"></div>
+  <div id="openness-bar-container" class="bar-container">
+    <div id="openness-bar" class="bar-fill"></div>
   </div>
 </div>
 
-<!-- MediaPipe Hands CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
 <script>
-  const mainVideo   = document.getElementById('mainVideo');
-  const webcamEl    = document.getElementById('webcam');
-  const lmCanvas    = document.getElementById('landmarkCanvas');
-  const lmCtx       = lmCanvas.getContext('2d');
-  const statusEl    = document.getElementById('status-label');
-  const progressBar = document.getElementById('progress-bar');
-  const opennessBar = document.getElementById('openness-bar');
-
-  // PIP canvas resize
+  /* ── DOM refs ── */
+  const mainVideo    = document.getElementById('mainVideo');
+  const webcamEl     = document.getElementById('webcam');
   const pipContainer = document.getElementById('pip-container');
+  const lmCanvas     = document.getElementById('landmarkCanvas');
+  const lmCtx        = lmCanvas.getContext('2d');
+  const statusEl     = document.getElementById('status-label');
+  const progressBar  = document.getElementById('progress-bar');
+  const opennessBar  = document.getElementById('openness-bar');
+
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+  /* ── Constants ── */
+  const MIN_RATIO    = 0.05;
+  const MAX_RATIO    = 0.95;
+  const LERP_SPEED   = 0.12;
+  const SEEK_THRESH  = 0.04;
+  const FINGER_PAIRS = [[5, 8], [9, 12], [13, 16], [17, 20]];
+
+  /* ── State ── */
+  let targetSeek = 0, smoothSeek = 0, lastSeekTime = 0;
+  let hasHand = false, videoReady = false, isSeeking = false;
+
+  /* ── Helpers ── */
+  const dist2d = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const clamp  = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const lerp   = (a, b, t) => a + (b - a) * t;
+
   function resizeLmCanvas() {
     lmCanvas.width  = pipContainer.clientWidth;
     lmCanvas.height = pipContainer.clientHeight;
   }
-  resizeLmCanvas();
-  window.addEventListener('resize', resizeLmCanvas);
 
-  // autoplay → 즉시 pause (iOS 디코더 활성화용)
+  function calcOpenness(lm) {
+    const palmSize = dist2d(lm[0], lm[9]);
+    if (palmSize < 1e-6) return 0;
+    const avg = FINGER_PAIRS.reduce((s, [m, t]) => s + dist2d(lm[t], lm[m]), 0) / 4;
+    return clamp((avg / palmSize - MIN_RATIO) / (MAX_RATIO - MIN_RATIO), 0, 1);
+  }
+
+  function mapLandmarksToCover(lm, cw, ch) {
+    const vw = webcamEl.videoWidth  || 400;
+    const vh = webcamEl.videoHeight || 300;
+    const s  = Math.max(cw / vw, ch / vh);
+    const ox = (cw - vw * s) / 2;
+    const oy = (ch - vh * s) / 2;
+    return lm.map(p => ({
+      x: (p.x * vw * s + ox) / cw,
+      y: (p.y * vh * s + oy) / ch,
+      z: p.z,
+    }));
+  }
+
+  /* ── iOS video unlock ── */
   mainVideo.addEventListener('playing', () => {
     mainVideo.pause();
     mainVideo.currentTime = 0;
   }, { once: true });
 
-  // 실측 기반
-  const MIN_RATIO = 0.05;
-  const MAX_RATIO = 0.95;
+  /* ── PIP canvas resize ── */
+  resizeLmCanvas();
+  window.addEventListener('resize', resizeLmCanvas);
 
-  // State
-  let targetSeek = 0;
-  let smoothSeek = 0.0;
-  let hasHand    = false;
-
-  // ------- hand openness -------
-  function dist2d(a, b) {
-    return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
-  }
-
-  function calcOpenness(landmarks) {
-    const wrist     = landmarks[0];
-    const middleMcp = landmarks[9];
-    const palmSize  = dist2d(wrist, middleMcp);
-    if (palmSize < 1e-6) return 0;
-
-    const pairs = [[5, 8], [9, 12], [13, 16], [17, 20]];
-    const avgDist = pairs.reduce((s, [m, t]) => s + dist2d(landmarks[t], landmarks[m]), 0) / pairs.length;
-    const ratio = avgDist / palmSize;
-    return Math.min(1, Math.max(0, (ratio - MIN_RATIO) / (MAX_RATIO - MIN_RATIO)));
-  }
-
-  // ------- MediaPipe Hands -------
+  /* ── MediaPipe Hands ── */
   const hands = new Hands({
     locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
   });
-
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   hands.setOptions({
     maxNumHands: 1,
     modelComplexity: isMobile ? 0 : 1,
@@ -207,33 +167,18 @@
     minTrackingConfidence: 0.5,
   });
 
-  hands.onResults((results) => {
-    const cw = lmCanvas.width;
-    const ch = lmCanvas.height;
+  hands.onResults(({ multiHandLandmarks }) => {
+    const cw = lmCanvas.width, ch = lmCanvas.height;
     lmCtx.clearRect(0, 0, cw, ch);
 
-    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+    if (multiHandLandmarks?.length) {
       hasHand = true;
-      const lm = results.multiHandLandmarks[0];
-
-      // object-fit: cover 보정 - 웹캠 실제 비율과 PIP 비율 차이 반영
-      const vw = webcamEl.videoWidth || 400;
-      const vh = webcamEl.videoHeight || 300;
-      const s = Math.max(cw / vw, ch / vh);
-      const ox = (cw - vw * s) / 2;
-      const oy = (ch - vh * s) / 2;
-
-      // 랜드마크 좌표를 cover 크롭에 맞게 변환
-      const mapped = lm.map(p => ({
-        x: (p.x * vw * s + ox) / cw,
-        y: (p.y * vh * s + oy) / ch,
-        z: p.z,
-      }));
+      const lm = multiHandLandmarks[0];
+      const mapped = mapLandmarksToCover(lm, cw, ch);
 
       drawConnectors(lmCtx, mapped, HAND_CONNECTIONS, { color: 'rgba(0,255,180,0.8)', lineWidth: 1.5 });
       drawLandmarks(lmCtx, mapped, { color: '#fff', fillColor: 'rgba(0,200,255,0.7)', lineWidth: 1, radius: 3 });
 
-      // openness는 원본 좌표로 계산
       targetSeek = calcOpenness(lm);
       statusEl.textContent = `Fortune Opening: ${(targetSeek * 100).toFixed(0)}%`;
     } else {
@@ -242,25 +187,19 @@
     }
   });
 
-  // ------- Camera -------
+  /* ── Camera ── */
   const camera = new Camera(webcamEl, {
     onFrame: async () => { await hands.send({ image: webcamEl }); },
-    width: 400,
-    height: 300,
+    width: 400, height: 300,
   });
 
   camera.start().then(() => {
     statusEl.textContent = '손을 카메라에 보여주세요';
-    // 웹캠 실제 비율에 맞춰 PIP 크기 조정 (데스크톱만)
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (!isMobile) {
       webcamEl.addEventListener('loadedmetadata', () => {
-        const vw = webcamEl.videoWidth;
-        const vh = webcamEl.videoHeight;
+        const { videoWidth: vw, videoHeight: vh } = webcamEl;
         if (vw && vh) {
-          const pipW = pipContainer.clientWidth;
-          const pipH = pipW * (vh / vw);
-          pipContainer.style.height = pipH + 'px';
+          pipContainer.style.height = (pipContainer.clientWidth * vh / vw) + 'px';
           resizeLmCanvas();
         }
       });
@@ -269,28 +208,22 @@
     statusEl.textContent = '웹캠 접근 실패: ' + err.message;
   });
 
-  // ------- rAF loop -------
-  function lerp(a, b, t) { return a + (b - a) * t; }
-
-  let videoReady = false;
-  mainVideo.addEventListener('loadedmetadata', () => { videoReady = true; });
-  mainVideo.addEventListener('canplaythrough', () => { videoReady = true; });
-
-  let isSeeking = false;
-  let lastSeekTime = 0;
+  /* ── Video ready ── */
+  mainVideo.addEventListener('loadedmetadata',  () => { videoReady = true; });
+  mainVideo.addEventListener('canplaythrough',  () => { videoReady = true; });
   mainVideo.addEventListener('seeking', () => { isSeeking = true; });
   mainVideo.addEventListener('seeked',  () => { isSeeking = false; });
 
+  /* ── Animation loop ── */
   function tick() {
     const dur = mainVideo.duration;
-    if (videoReady && dur && !isNaN(dur)) {
+    if (videoReady && dur) {
       if (hasHand) {
-        smoothSeek = lerp(smoothSeek, targetSeek, 0.12);
-        const newTime = Math.min(smoothSeek * dur, dur - 0.001);
-        // 변화가 충분할 때만 seek (모바일 부하 감소)
-        if (!isSeeking && Math.abs(newTime - lastSeekTime) > 0.04) {
-          mainVideo.currentTime = newTime;
-          lastSeekTime = newTime;
+        smoothSeek = lerp(smoothSeek, targetSeek, LERP_SPEED);
+        const t = Math.min(smoothSeek * dur, dur - 0.001);
+        if (!isSeeking && Math.abs(t - lastSeekTime) > SEEK_THRESH) {
+          mainVideo.currentTime = t;
+          lastSeekTime = t;
         }
       }
       progressBar.style.width = (mainVideo.currentTime / dur * 100) + '%';
@@ -298,7 +231,6 @@
     opennessBar.style.width = (smoothSeek * 100) + '%';
     requestAnimationFrame(tick);
   }
-
   requestAnimationFrame(tick);
 </script>
 </body>
