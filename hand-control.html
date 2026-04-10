@@ -221,15 +221,20 @@
     statusEl.textContent = '웹캠 접근 실패: ' + err.message;
   });
 
-  // ------- 모바일: 터치로 영상 로드 활성화 -------
-  function initVideoOnInteraction() {
-    mainVideo.load();
-    mainVideo.currentTime = 0;
-    document.removeEventListener('touchstart', initVideoOnInteraction);
-    document.removeEventListener('click', initVideoOnInteraction);
+  // ------- 모바일(iOS): play→pause로 영상 unlock -------
+  let videoUnlocked = false;
+  function unlockVideo() {
+    if (videoUnlocked) return;
+    videoUnlocked = true;
+    mainVideo.play().then(() => {
+      mainVideo.pause();
+      mainVideo.currentTime = 0;
+    }).catch(() => {});
+    document.removeEventListener('touchstart', unlockVideo);
+    document.removeEventListener('click', unlockVideo);
   }
-  document.addEventListener('touchstart', initVideoOnInteraction, { once: true });
-  document.addEventListener('click', initVideoOnInteraction, { once: true });
+  document.addEventListener('touchstart', unlockVideo, { once: true });
+  document.addEventListener('click', unlockVideo, { once: true });
 
   // ------- rAF loop for smooth seek -------
   function lerp(a, b, t) { return a + (b - a) * t; }
