@@ -206,12 +206,32 @@
   });
 
   hands.onResults((results) => {
-    lmCtx.clearRect(0, 0, lmCanvas.width, lmCanvas.height);
+    const cw = lmCanvas.width;
+    const ch = lmCanvas.height;
+    lmCtx.clearRect(0, 0, cw, ch);
+
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       hasHand = true;
       const lm = results.multiHandLandmarks[0];
-      drawConnectors(lmCtx, lm, HAND_CONNECTIONS, { color: 'rgba(0,255,180,0.8)', lineWidth: 1.5 });
-      drawLandmarks(lmCtx, lm, { color: '#fff', fillColor: 'rgba(0,200,255,0.7)', lineWidth: 1, radius: 3 });
+
+      // object-fit: cover 보정 - 웹캠 실제 비율과 PIP 비율 차이 반영
+      const vw = webcamEl.videoWidth || 400;
+      const vh = webcamEl.videoHeight || 300;
+      const s = Math.max(cw / vw, ch / vh);
+      const ox = (cw - vw * s) / 2;
+      const oy = (ch - vh * s) / 2;
+
+      // 랜드마크 좌표를 cover 크롭에 맞게 변환
+      const mapped = lm.map(p => ({
+        x: (p.x * vw * s + ox) / cw,
+        y: (p.y * vh * s + oy) / ch,
+        z: p.z,
+      }));
+
+      drawConnectors(lmCtx, mapped, HAND_CONNECTIONS, { color: 'rgba(0,255,180,0.8)', lineWidth: 1.5 });
+      drawLandmarks(lmCtx, mapped, { color: '#fff', fillColor: 'rgba(0,200,255,0.7)', lineWidth: 1, radius: 3 });
+
+      // openness는 원본 좌표로 계산
       targetSeek = calcOpenness(lm);
       statusEl.textContent = `Fortune Opening: ${(targetSeek * 100).toFixed(0)}%`;
     } else {
