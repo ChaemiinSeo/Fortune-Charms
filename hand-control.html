@@ -106,7 +106,7 @@
 <body>
 
 <div id="video-container">
-  <video id="mainVideo" src="지류 추출.428.mp4" preload="auto"></video>
+  <video id="mainVideo" src="지류 추출.428.mp4" preload="auto" muted playsinline webkit-playsinline></video>
 </div>
 
 <div id="pip-container">
@@ -221,18 +221,26 @@
     statusEl.textContent = '웹캠 접근 실패: ' + err.message;
   });
 
+  // ------- 모바일: 터치로 영상 로드 활성화 -------
+  function initVideoOnInteraction() {
+    mainVideo.load();
+    mainVideo.currentTime = 0;
+    document.removeEventListener('touchstart', initVideoOnInteraction);
+    document.removeEventListener('click', initVideoOnInteraction);
+  }
+  document.addEventListener('touchstart', initVideoOnInteraction, { once: true });
+  document.addEventListener('click', initVideoOnInteraction, { once: true });
+
   // ------- rAF loop for smooth seek -------
   function lerp(a, b, t) { return a + (b - a) * t; }
 
   let videoReady = false;
 
-  // loadedmetadata fires once → duration is now valid
   mainVideo.addEventListener('loadedmetadata', () => {
     videoReady = true;
     mainVideo.currentTime = 0;
   });
 
-  // Fallback: canplaythrough도 ready 플래그 세팅
   mainVideo.addEventListener('canplaythrough', () => {
     videoReady = true;
   });
