@@ -204,7 +204,7 @@
       drawConnectors(lmCtx, lm, HAND_CONNECTIONS, { color: 'rgba(0,255,180,0.8)', lineWidth: 1.5 });
       drawLandmarks(lmCtx, lm, { color: '#fff', fillColor: 'rgba(0,200,255,0.7)', lineWidth: 1, radius: 3 });
       targetSeek = calcOpenness(lm);
-      statusEl.textContent = `개폐도: ${(targetSeek * 100).toFixed(0)}%`;
+      statusEl.textContent = `Fortune Opening: ${(targetSeek * 100).toFixed(0)}%`;
     } else {
       hasHand = false;
       statusEl.textContent = '손을 카메라에 보여주세요';
