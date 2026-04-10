@@ -229,6 +229,17 @@
 
   camera.start().then(() => {
     statusEl.textContent = '손을 카메라에 보여주세요';
+    // 웹캠 실제 비율에 맞춰 PIP 크기 조정
+    webcamEl.addEventListener('loadedmetadata', () => {
+      const vw = webcamEl.videoWidth;
+      const vh = webcamEl.videoHeight;
+      if (vw && vh) {
+        const pipW = pipContainer.clientWidth;
+        const pipH = pipW * (vh / vw);
+        pipContainer.style.height = pipH + 'px';
+        resizeLmCanvas();
+      }
+    });
   }).catch((err) => {
     statusEl.textContent = '웹캠 접근 실패: ' + err.message;
   });
