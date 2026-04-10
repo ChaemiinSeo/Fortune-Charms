@@ -70,7 +70,7 @@
 <body>
 
 <div id="video-container">
-  <video id="mainVideo" src="video_mobile.mp4" preload="auto" autoplay muted playsinline webkit-playsinline></video>
+  <video id="mainVideo" src="video.mp4" preload="auto" autoplay muted playsinline webkit-playsinline></video>
 </div>
 
 <div id="pip-container">
@@ -104,6 +104,7 @@
   const opennessBar  = document.getElementById('openness-bar');
 
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (isMobile) mainVideo.src = 'video_mobile.mp4';
 
   /* ── Constants ── */
   const MIN_RATIO    = 0.05;
