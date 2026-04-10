@@ -8,20 +8,16 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #000; width: 100vw; height: 100vh; overflow: hidden; }
 
-  #videoCanvas {
+  #video-container {
     position: fixed;
     inset: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 1;
   }
 
-  /* 숨겨진 원본 비디오 */
   #mainVideo {
-    position: absolute;
-    width: 1px; height: 1px;
-    opacity: 0;
-    pointer-events: none;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
 
   #pip-container {
@@ -106,35 +102,13 @@
     background: #4af;
     border-radius: 2px;
   }
-
-  /* 시작 오버레이 */
-  #startOverlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 100;
-    cursor: pointer;
-  }
-  #startOverlay span {
-    color: #fff;
-    font-family: sans-serif;
-    font-size: 18px;
-    background: rgba(255,255,255,0.15);
-    padding: 16px 32px;
-    border-radius: 12px;
-  }
-  #startOverlay.hidden { display: none; }
 </style>
 </head>
 <body>
 
-<div id="startOverlay"><span>터치하여 시작</span></div>
-
-<canvas id="videoCanvas"></canvas>
-<video id="mainVideo" src="지류 추출.428.mp4" preload="auto" muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+<div id="video-container">
+  <video id="mainVideo" src="지류 추출.428.mp4" preload="auto" autoplay muted playsinline webkit-playsinline></video>
+</div>
 
 <div id="pip-container">
   <video id="webcam" autoplay playsinline muted></video>
@@ -142,7 +116,7 @@
 </div>
 
 <div id="hud">
-  <div id="status-label">터치하여 시작</div>
+  <div id="status-label">웹캠 초기화 중...</div>
   <div id="progress-bar-container">
     <div id="progress-bar"></div>
   </div>
@@ -157,16 +131,13 @@
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
 <script>
-  const mainVideo    = document.getElementById('mainVideo');
-  const videoCanvas  = document.getElementById('videoCanvas');
-  const vCtx         = videoCanvas.getContext('2d');
-  const webcamEl     = document.getElementById('webcam');
-  const lmCanvas     = document.getElementById('landmarkCanvas');
-  const lmCtx        = lmCanvas.getContext('2d');
-  const statusEl     = document.getElementById('status-label');
-  const progressBar  = document.getElementById('progress-bar');
-  const opennessBar  = document.getElementById('openness-bar');
-  const startOverlay = document.getElementById('startOverlay');
+  const mainVideo   = document.getElementById('mainVideo');
+  const webcamEl    = document.getElementById('webcam');
+  const lmCanvas    = document.getElementById('landmarkCanvas');
+  const lmCtx       = lmCanvas.getContext('2d');
+  const statusEl    = document.getElementById('status-label');
+  const progressBar = document.getElementById('progress-bar');
+  const opennessBar = document.getElementById('openness-bar');
 
   // PIP canvas resize
   const pipContainer = document.getElementById('pip-container');
@@ -175,17 +146,13 @@
     lmCanvas.height = pipContainer.clientHeight;
   }
   resizeLmCanvas();
+  window.addEventListener('resize', resizeLmCanvas);
 
-  // 메인 캔버스 리사이즈
-  function resizeVideoCanvas() {
-    videoCanvas.width  = window.innerWidth * devicePixelRatio;
-    videoCanvas.height = window.innerHeight * devicePixelRatio;
-    videoCanvas.style.width  = window.innerWidth + 'px';
-    videoCanvas.style.height = window.innerHeight + 'px';
-    drawVideoFrame(); // 리사이즈 시 즉시 다시 그리기
-  }
-  window.addEventListener('resize', () => { resizeVideoCanvas(); resizeLmCanvas(); });
-  resizeVideoCanvas();
+  // autoplay → 즉시 pause (iOS 디코더 활성화용)
+  mainVideo.addEventListener('playing', () => {
+    mainVideo.pause();
+    mainVideo.currentTime = 0;
+  }, { once: true });
 
   // 실측 기반
   const MIN_RATIO = 0.05;
@@ -195,27 +162,6 @@
   let targetSeek = 0;
   let smoothSeek = 0.0;
   let hasHand    = false;
-  let videoReady = false;
-  let started    = false;
-
-  // ------- 비디오 프레임을 캔버스에 그리기 (object-fit: cover 구현) -------
-  function drawVideoFrame() {
-    if (!mainVideo.videoWidth) return;
-
-    const cw = videoCanvas.width;
-    const ch = videoCanvas.height;
-    const vw = mainVideo.videoWidth;
-    const vh = mainVideo.videoHeight;
-
-    // cover 비율 계산
-    const scale = Math.max(cw / vw, ch / vh);
-    const sw = cw / scale;
-    const sh = ch / scale;
-    const sx = (vw - sw) / 2;
-    const sy = (vh - sh) / 2;
-
-    vCtx.drawImage(mainVideo, sx, sy, sw, sh, 0, 0, cw, ch);
-  }
 
   // ------- hand openness -------
   function dist2d(a, b) {
@@ -268,37 +214,22 @@
     height: 300,
   });
 
-  // ------- 시작: 터치/클릭으로 비디오 unlock + 카메라 시작 -------
-  function startApp() {
-    if (started) return;
-    started = true;
-    startOverlay.classList.add('hidden');
-
-    // iOS에서 비디오 unlock: 사용자 제스처 컨텍스트에서 play 호출
-    mainVideo.play().then(() => {
-      mainVideo.pause();
-      mainVideo.currentTime = 0;
-    }).catch(() => {});
-
-    camera.start().then(() => {
-      statusEl.textContent = '손을 카메라에 보여주세요';
-    }).catch((err) => {
-      statusEl.textContent = '웹캠 접근 실패: ' + err.message;
-    });
-  }
-
-  startOverlay.addEventListener('click', startApp);
-  startOverlay.addEventListener('touchend', startApp);
+  camera.start().then(() => {
+    statusEl.textContent = '손을 카메라에 보여주세요';
+  }).catch((err) => {
+    statusEl.textContent = '웹캠 접근 실패: ' + err.message;
+  });
 
   // ------- rAF loop -------
   function lerp(a, b, t) { return a + (b - a) * t; }
 
+  let videoReady = false;
   mainVideo.addEventListener('loadedmetadata', () => { videoReady = true; });
   mainVideo.addEventListener('canplaythrough', () => { videoReady = true; });
 
   let isSeeking = false;
   mainVideo.addEventListener('seeking', () => { isSeeking = true; });
-  mainVideo.addEventListener('seeked',  () => { isSeeking = false; drawVideoFrame(); });
+  mainVideo.addEventListener('seeked',  () => { isSeeking = false; });
 
   function tick() {
     const dur = mainVideo.duration;
@@ -309,7 +240,6 @@
           mainVideo.currentTime = Math.min(smoothSeek * dur, dur - 0.001);
         }
       }
-      drawVideoFrame();
       progressBar.style.width = (mainVideo.currentTime / dur * 100) + '%';
     }
     opennessBar.style.width = (smoothSeek * 100) + '%';
