@@ -149,7 +149,7 @@
 
   /* ── iOS video unlock ── */
   mainVideo.addEventListener('playing', () => {
-    mainVideo.playbackRate = 0;
+    mainVideo.pause();
     mainVideo.currentTime = 0;
   }, { once: true });
 
