@@ -15,14 +15,6 @@
     display: block; position: absolute;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    -webkit-appearance: none;
-  }
-  #mainVideo::-webkit-media-controls { display: none !important; }
-  #mainVideo::-webkit-media-controls-start-playback-button { display: none !important; opacity: 0 !important; pointer-events: none !important; }
-  #mainVideo::-webkit-media-controls-play-button { display: none !important; }
-  .touch-overlay {
-    position: absolute; inset: 0; z-index: 2;
-    background: transparent;
   }
 
   /* ── PIP Webcam ── */
@@ -79,12 +71,10 @@
 
 <div id="video-container">
   <video id="mainVideo" src="video.mp4" preload="auto" autoplay muted playsinline webkit-playsinline></video>
-  <div class="touch-overlay"></div>
 </div>
 
 <div id="pip-container">
   <video id="webcam" autoplay playsinline muted></video>
-  <div class="touch-overlay"></div>
   <canvas id="landmarkCanvas"></canvas>
 </div>
 
@@ -158,14 +148,10 @@
   }
 
   /* ── iOS video unlock ── */
-  function unlockVideo() {
-    mainVideo.play().then(() => {
-      mainVideo.pause();
-      mainVideo.currentTime = 0;
-    }).catch(() => {});
-  }
-  mainVideo.addEventListener('loadeddata', unlockVideo, { once: true });
-  document.addEventListener('touchstart', unlockVideo, { once: true });
+  mainVideo.addEventListener('playing', () => {
+    mainVideo.pause();
+    mainVideo.currentTime = 0;
+  }, { once: true });
 
   /* ── PIP canvas resize ── */
   resizeLmCanvas();
