@@ -15,10 +15,14 @@
     display: block; position: absolute;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
+    -webkit-appearance: none;
   }
   #mainVideo::-webkit-media-controls { display: none !important; }
-  #mainVideo::-webkit-media-controls-start-playback-button { display: none !important; }
+  #mainVideo::-webkit-media-controls-start-playback-button { display: none !important; opacity: 0 !important; pointer-events: none !important; }
   #mainVideo::-webkit-media-controls-play-button { display: none !important; }
+  #video-container::after {
+    content: ''; position: absolute; inset: 0; z-index: 1;
+  }
 
   /* ── PIP Webcam ── */
   #pip-container {
@@ -73,7 +77,7 @@
 <body>
 
 <div id="video-container">
-  <video id="mainVideo" src="video.mp4" preload="auto" autoplay muted playsinline webkit-playsinline></video>
+  <video id="mainVideo" src="video.mp4" preload="auto" muted playsinline webkit-playsinline></video>
 </div>
 
 <div id="pip-container">
@@ -151,10 +155,14 @@
   }
 
   /* ── iOS video unlock ── */
-  mainVideo.addEventListener('playing', () => {
-    mainVideo.pause();
-    mainVideo.currentTime = 0;
-  }, { once: true });
+  function unlockVideo() {
+    mainVideo.play().then(() => {
+      mainVideo.pause();
+      mainVideo.currentTime = 0;
+    }).catch(() => {});
+  }
+  mainVideo.addEventListener('loadeddata', unlockVideo, { once: true });
+  document.addEventListener('touchstart', unlockVideo, { once: true });
 
   /* ── PIP canvas resize ── */
   resizeLmCanvas();
