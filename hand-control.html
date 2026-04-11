@@ -74,7 +74,7 @@
 </div>
 
 <div id="pip-container">
-  <video id="webcam" autoplay playsinline muted></video>
+  <video id="webcam" autoplay playsinline muted style="visibility:hidden"></video>
   <canvas id="landmarkCanvas"></canvas>
 </div>
 
@@ -149,7 +149,7 @@
 
   /* ── iOS video unlock ── */
   mainVideo.addEventListener('playing', () => {
-    mainVideo.pause();
+    mainVideo.playbackRate = 0;
     mainVideo.currentTime = 0;
   }, { once: true });
 
@@ -195,6 +195,7 @@
   });
 
   camera.start().then(() => {
+    webcamEl.style.visibility = 'visible';
     statusEl.textContent = '손을 카메라에 보여주세요';
     if (!isMobile) {
       webcamEl.addEventListener('loadedmetadata', () => {
