@@ -37,7 +37,10 @@
     width: 100%; height: 100%;
     transform: scaleX(-1);
   }
-  #webcam { object-fit: cover; }
+  #webcam { object-fit: cover; -webkit-appearance: none; }
+  #webcam::-webkit-media-controls { display: none !important; }
+  #webcam::-webkit-media-controls-start-playback-button { display: none !important; opacity: 0 !important; pointer-events: none !important; }
+  #webcam::-webkit-media-controls-play-button { display: none !important; }
   #landmarkCanvas { pointer-events: none; }
 
   /* ── HUD ── */
