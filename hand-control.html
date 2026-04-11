@@ -20,8 +20,9 @@
   #mainVideo::-webkit-media-controls { display: none !important; }
   #mainVideo::-webkit-media-controls-start-playback-button { display: none !important; opacity: 0 !important; pointer-events: none !important; }
   #mainVideo::-webkit-media-controls-play-button { display: none !important; }
-  #video-container::after {
-    content: ''; position: absolute; inset: 0; z-index: 1;
+  .touch-overlay {
+    position: absolute; inset: 0; z-index: 2;
+    background: transparent;
   }
 
   /* ── PIP Webcam ── */
@@ -78,10 +79,12 @@
 
 <div id="video-container">
   <video id="mainVideo" src="video.mp4" preload="auto" autoplay muted playsinline webkit-playsinline></video>
+  <div class="touch-overlay"></div>
 </div>
 
 <div id="pip-container">
   <video id="webcam" autoplay playsinline muted></video>
+  <div class="touch-overlay"></div>
   <canvas id="landmarkCanvas"></canvas>
 </div>
 
